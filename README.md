@@ -1,6 +1,6 @@
 # Excel to LaTeX Table Generator
 
-A Python CLI tool that converts Excel tables to LaTeX format with professional styling, supporting bullet lists, merged cells, and customizable formatting.
+A simple Python script that converts Excel tables to LaTeX format with professional styling, supporting bullet lists, merged cells, and customizable formatting.
 
 ## Features
 
@@ -11,6 +11,7 @@ A Python CLI tool that converts Excel tables to LaTeX format with professional s
 - ✅ Supports custom section titles, captions, and labels
 - ✅ Smart column width distribution
 - ✅ Full borders with `\hline`
+- ✅ No command-line arguments needed - just edit and run!
 
 ## Installation
 
@@ -20,46 +21,28 @@ pip install -r requirements.txt
 
 ## Usage
 
-### Basic Usage
+### Quick Start
 
-```bash
-python excel_to_latex.py input.xlsx
+1. **Edit the configuration** at the top of `excel_to_latex.py`:
+
+```python
+# Edit these values in the script
+INPUT_EXCEL_FILE = "input.xlsx"       # Your Excel file
+SHEET_NAME = None                      # None = active sheet
+OUTPUT_LATEX_FILE = "output.tex"       # Output file
+
+SECTION_TITLE = "Research Objectives"
+TABLE_CAPTION = "Your caption here"
+TABLE_LABEL = "tab:research-objectives"
 ```
 
-This outputs the LaTeX code to stdout.
-
-### Save to File
+2. **Run the script**:
 
 ```bash
-python excel_to_latex.py input.xlsx -o output.tex
+python excel_to_latex.py
 ```
 
-### With Metadata
-
-```bash
-python excel_to_latex.py input.xlsx \
-  --section "Research Objectives" \
-  --caption "Research objectives, explanations, and corresponding learning outcomes" \
-  --label "tab:research-objectives" \
-  -o output.tex
-```
-
-### Specify Sheet
-
-```bash
-python excel_to_latex.py input.xlsx -s "Sheet2"
-```
-
-## Command Line Options
-
-| Option | Description |
-|--------|-------------|
-| `input_file` | Input Excel file (.xlsx) [required] |
-| `-o, --output` | Output LaTeX file (default: stdout) |
-| `-s, --sheet` | Sheet name (default: active sheet) |
-| `--section` | Section title for the table |
-| `-c, --caption` | Table caption |
-| `-l, --label` | Table label (e.g., tab:mytable) |
+That's it! The LaTeX code will be saved to `output.tex`.
 
 ## Excel Formatting Tips
 
@@ -115,10 +98,18 @@ Add these to your LaTeX document preamble:
 \usepackage{ragged2e}   % For \RaggedRight
 ```
 
-## Example
+## Example Output
 
-See `example.xlsx` for a sample Excel file and `example_output.tex` for the generated LaTeX.
-
-## License
-
-MIT
+```latex
+\begin{table}[H]
+\section{Research Objectives}
+\centering
+\begin{tabular}{|>{\RaggedRight}p{0.15\textwidth}|>{\RaggedRight}p{0.65\textwidth}|>{\RaggedRight}p{0.10\textwidth}|}
+\hline
+Column 1 & Column 2 & Column 3 \\ \hline
+...
+\end{tabular}
+\caption{Your caption}
+\label{tab:research-objectives}
+\end{table}
+```

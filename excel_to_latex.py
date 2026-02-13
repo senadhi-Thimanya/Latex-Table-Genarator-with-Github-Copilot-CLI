@@ -4,12 +4,23 @@ Excel to LaTeX Table Converter
 Converts Excel tables to LaTeX format with customizable styling
 """
 
-import argparse
-import sys
 from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 import re
+
+# ============================================
+# CONFIGURATION - Edit these values
+# ============================================
+INPUT_EXCEL_FILE = "simple_table.xlsx"  # Change this to your Excel file name
+SHEET_NAME = None  # None = use active sheet, or specify sheet name like "Sheet1"
+OUTPUT_LATEX_FILE = "output.tex"  # Output file name
+
+# Table metadata (edit these or leave empty)
+SECTION_TITLE = ""
+TABLE_CAPTION = ""
+TABLE_LABEL = ""
+# ============================================
 
 
 class ExcelToLatex:
@@ -153,17 +164,37 @@ class ExcelToLatex:
         return self._format_cell_content(cell.value), None
     
     def _calculate_column_widths(self, num_cols):
-        """Calculate sensible column widths that sum to ~0.9 textwidth"""
-        if num_cols == 1:
-            return [0.90]
-        elif num_cols == 2:
-            return [0.45, 0.45]
-        elif num_cols == 3:
-            return [0.15, 0.65, 0.10]
-        else:
-            # Distribute evenly
-            width = 0.90 / num_cols
-            return [round(width, 2)] * num_cols
+        """Calculate column widths based on Excel column widths, normalized to fit page"""
+        # Get Excel column widths
+        excel_widths = []
+        for col_idx in range(1, num_cols + 1):
+            col_letter = self.sheet.cell(1, col_idx).column_letter
+            col_dim = self.sheet.column_dimensions[col_letter]
+            # Excel default width is about 8.43, use that if not set
+            width = col_dim.width if col_dim.width else 8.43
+            excel_widths.append(width)
+        
+        # Calculate total width
+        total_width = sum(excel_widths)
+        
+        # Maximum usable textwidth (leaving margins)
+        MAX_TEXTWIDTH = 0.90
+        
+        # Normalize to fit within MAX_TEXTWIDTH
+        normalized_widths = [(w / total_width) * MAX_TEXTWIDTH for w in excel_widths]
+        
+        # Round to 2 decimal places
+        normalized_widths = [round(w, 2) for w in normalized_widths]
+        
+        # Ensure sum doesn't exceed MAX_TEXTWIDTH due to rounding
+        current_sum = sum(normalized_widths)
+        if current_sum > MAX_TEXTWIDTH:
+            # Adjust the largest column slightly
+            max_idx = normalized_widths.index(max(normalized_widths))
+            normalized_widths[max_idx] -= (current_sum - MAX_TEXTWIDTH)
+            normalized_widths[max_idx] = round(normalized_widths[max_idx], 2)
+        
+        return normalized_widths
     
     def generate_latex(self, section_title=None, caption=None, label=None):
         """Generate LaTeX table code"""
@@ -242,56 +273,57 @@ class ExcelToLatex:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Convert Excel tables to LaTeX format",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python excel_to_latex.py input.xlsx -o output.tex
-  python excel_to_latex.py input.xlsx -s "Sheet2" -c "My Table Caption"
-  python excel_to_latex.py input.xlsx --section "Research Objectives" --label "tab:research"
-        """
-    )
-    
-    parser.add_argument("input_file", help="Input Excel file (.xlsx)")
-    parser.add_argument("-o", "--output", help="Output LaTeX file (default: stdout)")
-    parser.add_argument("-s", "--sheet", help="Sheet name (default: active sheet)")
-    parser.add_argument("--section", help="Section title for the table")
-    parser.add_argument("-c", "--caption", help="Table caption")
-    parser.add_argument("-l", "--label", help="Table label (e.g., tab:mytable)")
-    
-    args = parser.parse_args()
+    print("=" * 60)
+    print("Excel to LaTeX Table Converter")
+    print("=" * 60)
     
     # Validate input file
-    input_path = Path(args.input_file)
+    input_path = Path(INPUT_EXCEL_FILE)
     if not input_path.exists():
-        print(f"Error: File '{args.input_file}' not found", file=sys.stderr)
-        sys.exit(1)
+        print(f"❌ Error: File '{INPUT_EXCEL_FILE}' not found")
+        print(f"   Please edit INPUT_EXCEL_FILE in the script to point to your Excel file")
+        return
     
     if input_path.suffix.lower() not in ['.xlsx', '.xls']:
-        print("Error: Input file must be .xlsx or .xls format", file=sys.stderr)
-        sys.exit(1)
+        print("❌ Error: Input file must be .xlsx or .xls format")
+        return
     
     try:
+        print(f"📄 Reading Excel file: {INPUT_EXCEL_FILE}")
+        if SHEET_NAME:
+            print(f"📋 Using sheet: {SHEET_NAME}")
+        else:
+            print(f"📋 Using active sheet")
+        
         # Convert
-        converter = ExcelToLatex(args.input_file, args.sheet)
+        converter = ExcelToLatex(INPUT_EXCEL_FILE, SHEET_NAME)
         latex_code = converter.generate_latex(
-            section_title=args.section,
-            caption=args.caption,
-            label=args.label
+            section_title=SECTION_TITLE if SECTION_TITLE else None,
+            caption=TABLE_CAPTION if TABLE_CAPTION else None,
+            label=TABLE_LABEL if TABLE_LABEL else None
         )
         
         # Output
-        if args.output:
-            output_path = Path(args.output)
-            output_path.write_text(latex_code, encoding='utf-8')
-            print(f"LaTeX code written to {args.output}")
-        else:
-            print(latex_code)
+        output_path = Path(OUTPUT_LATEX_FILE)
+        output_path.write_text(latex_code, encoding='utf-8')
+        
+        print(f"✅ LaTeX code generated successfully!")
+        print(f"📝 Output written to: {OUTPUT_LATEX_FILE}")
+        print()
+        print("Preview:")
+        print("-" * 60)
+        # Show first 10 lines
+        lines = latex_code.split('\n')
+        for line in lines[:10]:
+            print(line)
+        if len(lines) > 10:
+            print(f"... ({len(lines) - 10} more lines)")
+        print("-" * 60)
     
     except Exception as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+        print(f"❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
