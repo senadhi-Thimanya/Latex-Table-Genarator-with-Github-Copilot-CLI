@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table to LaTeX Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1000px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px;
+            }
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section h2 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8e9ff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .upload-area p strong {
+            color: #667eea;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .preview-area {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f5f5;
+            display: none;
+        }
+
+        .preview-area.active {
+            display: block;
+        }
+
+        .preview-area img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .remove-image {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .remove-image:hover {
+            background: rgba(255, 0, 0, 1);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            flex: 1;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+            flex: 0;
+            min-width: 120px;
+        }
+
+        .btn-copy:hover {
+            background: #218838;
+        }
+
+        .btn-download {
+            background: #007bff;
+            color: white;
+            flex: 0;
+            min-width: 120px;
+        }
+
+        .btn-download:hover {
+            background: #0056b3;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            display: none;
+            margin: 10px 0;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            display: none;
+            margin: 10px 0;
+        }
+
+        .success.active {
+            display: block;
+        }
+
+        .latex-output {
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .latex-output.active {
+            display: flex;
+        }
+
+        .latex-code {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.95em;
+            margin-top: 10px;
+        }
+
+        .metadata {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .metadata h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Table to LaTeX Generator</h1>
+            <p>Convert table images to LaTeX code instantly</p>
+        </div>
+
+        <div class="content">
+            <!-- Left Section: Image Upload -->
+            <div class="section">
+                <h2>Step 1: Upload Image</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📷</div>
+                    <p><strong>Click to upload</strong> or drag and drop</p>
+                    <p style="font-size: 0.9em; color: #999;">PNG or JPG (max 10MB)</p>
+                    <input type="file" id="fileInput" accept="image/png,image/jpeg,image/jpg">
+                </div>
+
+                <div class="preview-area" id="previewArea">
+                    <img id="previewImage" alt="Preview">
+                    <button class="remove-image" onclick="removeImage()">✕</button>
+                </div>
+
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 10px; color: #666;">Processing image...</p>
+                </div>
+
+                <div class="error" id="errorMessage"></div>
+                <div class="success" id="successMessage"></div>
+            </div>
+
+            <!-- Right Section: LaTeX Output & Metadata -->
+            <div class="section">
+                <h2>Step 2: Customize & Export</h2>
+
+                <div class="metadata">
+                    <h3>Table Metadata</h3>
+                    
+                    <div class="form-group">
+                        <label for="sectionTitle">Section Title (Optional)</label>
+                        <input type="text" id="sectionTitle" placeholder="e.g., Research Results">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="caption">Table Caption (Optional)</label>
+                        <input type="text" id="caption" placeholder="e.g., Summary of findings">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="label">LaTeX Label (Optional)</label>
+                        <input type="text" id="label" placeholder="e.g., tab:results">
+                    </div>
+
+                    <div class="button-row" style="margin-top: 15px;">
+                        <button class="btn-primary" id="extractBtn" onclick="extractTable()" disabled>
+                            Extract Table
+                        </button>
+                    </div>
+                </div>
+
+                <!-- LaTeX Output -->
+                <div class="latex-output" id="latexOutput">
+                    <div style="background: #e8f5e9; padding: 10px; border-radius: 6px;">
+                        <p style="color: #2e7d32; font-weight: 600;">✓ Table extracted successfully!</p>
+                    </div>
+                    
+                    <div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <label style="font-weight: 600; color: #333;">LaTeX Code:</label>
+                            <span style="font-size: 0.85em; color: #999;" id="latexStats"></span>
+                        </div>
+                        <div class="latex-code" id="latexCode"></div>
+                    </div>
+
+                    <div class="button-row">
+                        <button class="btn-copy" onclick="copyToClipboard()">📋 Copy</button>
+                        <button class="btn-download" onclick="downloadLatex()">⬇️ Download</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const previewArea = document.getElementById('previewArea');
+        const previewImage = document.getElementById('previewImage');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const latexOutput = document.getElementById('latexOutput');
+        const extractBtn = document.getElementById('extractBtn');
+
+        let selectedFile = null;
+        let currentLatexCode = '';
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFileSelect(files[0]);
+            }
+        });
+
+        // Click upload
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('Please select a valid image file');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) {
+                showError('File size must be less than 10MB');
+                return;
+            }
+
+            selectedFile = file;
+            showPreview(file);
+            extractBtn.disabled = false;
+            clearMessages();
+        }
+
+        function showPreview(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewArea.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            selectedFile = null;
+            fileInput.value = '';
+            previewArea.classList.remove('active');
+            latexOutput.classList.remove('active');
+            extractBtn.disabled = true;
+            clearMessages();
+        }
+
+        async function extractTable() {
+            if (!selectedFile) {
+                showError('Please select an image first');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('section_title', document.getElementById('sectionTitle').value);
+            formData.append('caption', document.getElementById('caption').value);
+            formData.append('label', document.getElementById('label').value);
+
+            showLoading(true);
+            clearMessages();
+
+            try {
+                const response = await fetch('/api/extract-table', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    currentLatexCode = data.latex_code;
+                    document.getElementById('latexCode').textContent = currentLatexCode;
+                    document.getElementById('latexStats').textContent = 
+                        `${data.rows_detected} rows × ${data.columns_detected} columns`;
+                    latexOutput.classList.add('active');
+                    showSuccess(data.message);
+                } else {
+                    showError(data.error || 'Failed to extract table');
+                }
+            } catch (error) {
+                showError(`Error: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(currentLatexCode).then(() => {
+                showSuccess('✓ LaTeX code copied to clipboard!');
+            }).catch(() => {
+                showError('Failed to copy to clipboard');
+            });
+        }
+
+        function downloadLatex() {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(currentLatexCode));
+            element.setAttribute('download', 'table.tex');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            showSuccess('✓ LaTeX file downloaded!');
+        }
+
+        function showLoading(show) {
+            loadingIndicator.classList.toggle('active', show);
+            extractBtn.disabled = show;
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('active');
+            setTimeout(() => {
+                successMessage.classList.remove('active');
+            }, 4000);
+        }
+
+        function clearMessages() {
+            errorMessage.classList.remove('active');
+            successMessage.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

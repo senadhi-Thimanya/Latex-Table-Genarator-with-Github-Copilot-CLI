@@ -12,7 +12,7 @@ import re
 # ============================================
 # CONFIGURATION - Edit these values
 # ============================================
-INPUT_EXCEL_FILE = "simple_table.xlsx"  # Change this to your Excel file name
+INPUT_EXCEL_FILE = "complex.xlsx"  # Change this to your Excel file name
 SHEET_NAME = None  # None = use active sheet, or specify sheet name like "Sheet1"
 OUTPUT_LATEX_FILE = "output.tex"  # Output file name
 

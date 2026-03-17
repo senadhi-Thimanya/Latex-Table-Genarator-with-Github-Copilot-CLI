@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Table to LaTeX Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .help-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .table-preview {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            overflow: auto;
+        }
+
+        .table-preview table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-preview th,
+        .table-preview td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        .table-preview th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-copy {
+            background: #28a745;
+            color: white;
+            min-width: 120px;
+        }
+
+        .btn-copy:hover {
+            background: #218838;
+        }
+
+        .btn-download {
+            background: #007bff;
+            color: white;
+            min-width: 120px;
+        }
+
+        .btn-download:hover {
+            background: #0056b3;
+        }
+
+        .latex-output {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .latex-output.active {
+            display: block;
+        }
+
+        .latex-code {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            margin: 15px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #c3e6cb;
+            display: none;
+            margin: 10px 0;
+        }
+
+        .success.active {
+            display: block;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #f5c6cb;
+            display: none;
+            margin: 10px 0;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 15px 20px;
+            font-size: 1em;
+            font-weight: 600;
+            color: #999;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Table to LaTeX Generator</h1>
+            <p>Convert your table data to professional LaTeX code</p>
+        </div>
+
+        <div class="content">
+            <!-- Input Tabs -->
+            <div class="tabs">
+                <button class="tab-button active" onclick="switchTab('paste')">📋 Paste Data</button>
+                <button class="tab-button" onclick="switchTab('builder')">✏️ Build Table</button>
+                <button class="tab-button" onclick="switchTab('image')">📷 Upload Image</button>
+            </div>
+
+            <!-- Tab 1: Paste Data -->
+            <div id="paste" class="tab-content active">
+                <div class="section">
+                    <h2>Paste Your Table Data</h2>
+                    <div class="form-group">
+                        <label>Table Data (Tab or Pipe Separated)</label>
+                        <textarea id="tableData" placeholder="Copy your table data here&#10;Headers in first row&#10;Separate columns with Tab or |&#10;Example:&#10;Name | Age | City&#10;John | 30 | NYC&#10;Jane | 25 | LA"></textarea>
+                        <div class="help-text">💡 Tip: Copy from Excel/Google Sheets and paste. Columns must be separated by Tab or | character.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Build Table -->
+            <div id="builder" class="tab-content">
+                <div class="section">
+                    <h2>Build Your Table</h2>
+                    <div class="form-group">
+                        <label>Number of Columns:</label>
+                        <input type="number" id="numCols" min="1" max="10" value="3" onchange="updateBuilder()">
+                    </div>
+                    <div class="form-group">
+                        <label>Number of Rows (including header):</label>
+                        <input type="number" id="numRows" min="2" max="20" value="3" onchange="updateBuilder()">
+                    </div>
+                    <div id="builderTable" style="margin-top: 20px;"></div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Upload Image -->
+            <div id="image" class="tab-content">
+                <div class="section">
+                    <h2>Extract Table from Image</h2>
+                    <div style="background: #f0f4ff; border-left: 4px solid #667eea; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <p><strong>💡 Tip:</strong> Need to extract a table from an image?</p>
+                        <p style="margin: 8px 0; font-size: 14px;">Use this <strong><a href="https://www.onlineocr.net/" target="_blank">free online OCR tool</a></strong> to extract text from your table image, then paste the result in the "Paste Data" tab above.</p>
+                    </div>
+                    <div style="border: 2px dashed #667eea; border-radius: 8px; padding: 30px; text-align: center; cursor: pointer;" id="uploadArea" onclick="document.getElementById('imageFile').click()">
+                        <div style="font-size: 3em; margin-bottom: 10px;">📷</div>
+                        <p><strong>Click to upload</strong> or drag and drop</p>
+                        <p style="color: #999;">PNG or JPG image (max 10MB)</p>
+                        <input type="file" id="imageFile" accept="image/png,image/jpeg" style="display: none;" onchange="handleImageSelect(event)">
+                    </div>
+                    <div id="imagePreview" style="margin-top: 20px; display: none;">
+                        <img id="previewImg" style="max-width: 100%; border-radius: 8px;">
+                        <button style="margin-top: 10px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;" onclick="clearImage()">✕ Remove Image</button>
+                    </div>
+                    <button class="btn-primary" id="extractBtn" style="margin-top: 15px; display: none;" onclick="extractFromImage()">🔍 Extract Table</button>
+                    <div id="loadingIndicator" style="display: none; text-align: center; padding: 20px;">
+                        <div style="display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                        <p style="margin-top: 10px; color: #666;">Extracting table...</p>
+                    </div>
+                    <style>
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    </style>
+                </div>
+            </div>
+
+            <!-- Metadata Section -->
+            <div class="section">
+                <h2>Table Metadata (Optional)</h2>
+                <div class="form-group">
+                    <label>Section Title:</label>
+                    <input type="text" id="sectionTitle" placeholder="e.g., Research Results">
+                </div>
+                <div class="form-group">
+                    <label>Table Caption:</label>
+                    <input type="text" id="caption" placeholder="e.g., Summary of findings">
+                </div>
+                <div class="form-group">
+                    <label>LaTeX Label:</label>
+                    <input type="text" id="label" placeholder="e.g., tab:results">
+                </div>
+            </div>
+
+            <!-- Generate Button -->
+            <div class="button-group">
+                <button class="btn-primary" onclick="generateLatex()">🚀 Generate LaTeX</button>
+            </div>
+
+            <!-- Messages -->
+            <div class="error" id="errorMsg"></div>
+            <div class="success" id="successMsg"></div>
+
+            <!-- Output -->
+            <div class="latex-output" id="latexOutput">
+                <h3>Generated LaTeX Code</h3>
+                <div class="latex-code" id="latexCode"></div>
+                <div class="button-group">
+                    <button class="btn-copy" onclick="copyLatex()">📋 Copy</button>
+                    <button class="btn-download" onclick="downloadLatex()">⬇️ Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentLatexCode = '';
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function updateBuilder() {
+            const cols = parseInt(document.getElementById('numCols').value);
+            const rows = parseInt(document.getElementById('numRows').value);
+            
+            let html = '<div class="table-preview"><table>';
+            
+            for (let i = 0; i < rows; i++) {
+                html += '<tr>';
+                for (let j = 0; j < cols; j++) {
+                    const isHeader = i === 0;
+                    const tag = isHeader ? 'th' : 'td';
+                    const id = `cell_${i}_${j}`;
+                    html += `<${tag}><input type="text" id="${id}" placeholder="${isHeader ? 'Header' : 'Data'}" style="width:100%; border:none; padding:0;"></input></${tag}>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table></div>';
+            
+            document.getElementById('builderTable').innerHTML = html;
+        }
+
+        function getTableFromBuilder() {
+            const cols = parseInt(document.getElementById('numCols').value);
+            const rows = parseInt(document.getElementById('numRows').value);
+            
+            const headers = [];
+            const dataRows = [];
+            
+            for (let i = 0; i < rows; i++) {
+                const row = [];
+                for (let j = 0; j < cols; j++) {
+                    const input = document.getElementById(`cell_${i}_${j}`);
+                    const value = input ? input.value || '' : '';
+                    row.push(value);
+                }
+                
+                if (i === 0) {
+                    Object.assign(headers, row);
+                } else {
+                    dataRows.push(row);
+                }
+            }
+            
+            return { headers, dataRows };
+        }
+
+        function parseTableData(text) {
+            if (!text.trim()) {
+                showError('Please enter table data');
+                return null;
+            }
+
+            const lines = text.trim().split('\n');
+            if (lines.length < 1) {
+                showError('Table must have at least a header row');
+                return null;
+            }
+
+            // Parse first row as headers
+            const headerLine = lines[0];
+            const headers = headerLine.split(/\t|\|/).map(h => h.trim()).filter(h => h);
+
+            // Parse remaining rows
+            const dataRows = [];
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (line) {
+                    const cells = line.split(/\t|\|/).map(c => c.trim()).filter(c => c);
+                    if (cells.length > 0) {
+                        // Pad cells to match header count
+                        while (cells.length < headers.length) {
+                            cells.push('');
+                        }
+                        dataRows.push(cells.slice(0, headers.length));
+                    }
+                }
+            }
+
+            if (dataRows.length === 0) {
+                showError('Table must have at least one data row');
+                return null;
+            }
+
+            return { headers, dataRows };
+        }
+
+        function generateLatex() {
+            clearMessages();
+
+            let tableData;
+            const activeTab = document.querySelector('.tab-content.active').id;
+
+            if (activeTab === 'paste') {
+                const text = document.getElementById('tableData').value;
+                tableData = parseTableData(text);
+                if (!tableData) return;
+            } else if (activeTab === 'builder') {
+                tableData = getTableFromBuilder();
+                if (!tableData.headers.some(h => h) || !tableData.dataRows.length) {
+                    showError('Please fill in at least headers and one data row');
+                    return;
+                }
+            } else {
+                // Image tab - extraction is separate
+                return;
+            }
+
+            // Prepare data
+            const data = {
+                headers: tableData.headers,
+                rows: tableData.dataRows,
+                section_title: document.getElementById('sectionTitle').value || null,
+                caption: document.getElementById('caption').value || null,
+                label: document.getElementById('label').value || null
+            };
+
+            // Send to backend
+            fetch('/api/generate-latex', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.latex_code) {
+                    currentLatexCode = data.latex_code;
+                    document.getElementById('latexCode').textContent = currentLatexCode;
+                    document.getElementById('latexOutput').classList.add('active');
+                    showSuccess('✓ LaTeX code generated successfully!');
+                } else {
+                    showError(data.error || 'Failed to generate LaTeX');
+                }
+            })
+            .catch(e => showError(`Error: ${e.message}`));
+        }
+
+        function handleImageSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('extractBtn').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function clearImage() {
+            document.getElementById('imageFile').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('extractBtn').style.display = 'none';
+        }
+
+        async function extractFromImage() {
+            clearMessages();
+            const file = document.getElementById('imageFile').files[0];
+            if (!file) {
+                showError('Please select an image');
+                return;
+            }
+
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('extractBtn').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/extract-table', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.headers && data.rows && data.rows.length > 0) {
+                    // Populate form with extracted data
+                    const fullHeaders = data.headers;
+                    const fullRows = data.rows;
+
+                    // Generate LaTeX directly
+                    const latexData = {
+                        headers: fullHeaders,
+                        rows: fullRows,
+                        section_title: document.getElementById('sectionTitle').value || null,
+                        caption: document.getElementById('caption').value || null,
+                        label: document.getElementById('label').value || null
+                    };
+
+                    const latexResponse = await fetch('/api/generate-latex', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(latexData)
+                    });
+
+                    const latexData2 = await latexResponse.json();
+                    if (latexData2.latex_code) {
+                        currentLatexCode = latexData2.latex_code;
+                        document.getElementById('latexCode').textContent = currentLatexCode;
+                        document.getElementById('latexOutput').classList.add('active');
+                        showSuccess(`✓ Extracted table: ${data.rows_detected} rows × ${data.columns_detected} columns`);
+                    }
+                } else {
+                    // Extraction failed - suggest workaround
+                    const errorMsg = data.message || 'Could not extract table';
+                    showError(`⚠️ ${errorMsg}<br><br><strong>Alternative:</strong> Use <a href="https://www.onlineocr.net/" target="_blank" style="color: white; text-decoration: underline;">free online OCR</a> to extract text, then paste in "Paste Data" tab`);
+                }
+            } catch (error) {
+                showError(`Error: ${error.message}<br><strong>Try:</strong> Use <a href="https://www.onlineocr.net/" target="_blank" style="color: white; text-decoration: underline;">online OCR tool</a> instead`);
+            } finally {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('extractBtn').style.display = 'block';
+            }
+        }
+
+        function copyLatex() {
+            navigator.clipboard.writeText(currentLatexCode).then(() => {
+                showSuccess('✓ Code copied to clipboard!');
+            }).catch(() => {
+                showError('Failed to copy');
+            });
+        }
+
+        function downloadLatex() {
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(currentLatexCode));
+            element.setAttribute('download', 'table.tex');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            showSuccess('✓ File downloaded!');
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.textContent = msg;
+            el.classList.add('active');
+        }
+
+        function showSuccess(msg) {
+            const el = document.getElementById('successMsg');
+            el.textContent = msg;
+            el.classList.add('active');
+            setTimeout(() => el.classList.remove('active'), 4000);
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMsg').classList.remove('active');
+            document.getElementById('successMsg').classList.remove('active');
+        }
+
+        // Initialize builder on page load
+        window.addEventListener('load', () => {
+            updateBuilder();
+        });
+    </script>
+</body>
+</html>
